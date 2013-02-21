@@ -2,7 +2,9 @@ package App::es;
 use strict;
 use warnings;
 use Moo;
+use MooX::Options;
 use ElasticSearch;
+
 our $VERSION = "0.1";
 
 ####
@@ -21,16 +23,68 @@ sub commands {
              /;
 }
 
-
-####
+#### attributes
 
 has es => (
-    is => "ro",
-    isa => sub {
-        die "[ERROR] Not a ElasticSearch object." unless ref($_[0]) eq "ElasticSearch"
-    },
-    required => 1
+    is => "lazy",
 );
+
+option long => (
+    is => "ro",
+    short => "l",
+    default => sub { 0 },
+    documentation => "Long format in the output."
+);
+
+sub _build_es {
+    return ElasticSearch->new( servers => $ENV{ELASTIC_SEARCH_SERVERS} );
+}
+
+#### command handlers
+
+sub command_ls {
+    my ($self, $str) = @_;
+
+    my $es = $self->es;
+
+    my $aliases = $es->get_aliases;
+
+    my @indices =$ElasticSearch::VERSION < 0.52
+        ? keys %{ $aliases->{indices} }
+        : keys %{ $aliases };
+
+    if ($self->long) {
+        my $stats;
+        eval {
+            $stats = $es->index_stats(
+                index => \@indices,
+                docs  => 1,
+                store => 1,
+            );
+            1;
+        } or do {
+            die "[ERROR] failed to obtain stats for index: $str\n";
+        };
+
+
+    INDEX: for my $i ( keys %{ $stats->{_all}{indices} } ) {
+            next INDEX if $str and $i !~ /$str/;
+
+            my $size  = $stats->{_all}{indices}{$i}{primaries}{store}{size};
+            my $count = $stats->{_all}{indices}{$i}{primaries}{docs}{count};
+
+            printf "%s\t%s\t%s\n", $size, $count, $i;
+        }
+    }
+    else {
+        for (@indices) {
+            print "$_\n";
+        }
+    }
+}
+
+
+#### Non-command handlers
 
 sub validate_params {
     my ($self, $cmd, @params) = @_;

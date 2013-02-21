@@ -21,17 +21,16 @@ my $cmd = shift or do {
 
 die "illegal command\n" unless grep {/^$cmd$/} App::es::commands;
 
+my $app = App::es->new_with_options;
 my @params = @ARGV;
 
-# create ES object
-my $es = ElasticSearch->new( servers => $ENV{ELASTIC_SEARCH_SERVERS} );
-my $app = App::es->new(es => $es);
+my $es = $app->es;
 
 my @aliases = @{ $app->_get_elastic_search_aliases };
 
 @params = $app->validate_params($cmd => @params);
 
-( $cmd eq 'ls'       ) and index_ls       ( @params );
+( $cmd eq 'ls'       ) and $app->command_ls( @params );
 ( $cmd eq 'ls-types' ) and index_ls_types ( @params );
 ( $cmd eq 'create'   ) and index_create   ( @params );
 ( $cmd eq 'delete'   ) and index_delete   ( @params );
@@ -42,8 +41,6 @@ my @aliases = @{ $app->_get_elastic_search_aliases };
 ( $cmd eq 'unalias'  ) and index_unalias  ( @params );
 
 exit 0;
-
-
 sub index_create {
     my ( $index ) = @_;
 
@@ -67,37 +64,6 @@ sub index_delete {
     warn "[ERROR] failed to delete index: $index\n" unless $result->{ok};
 }
 
-sub index_ls {
-    my ( $str ) = @_;
-
-    my $aliases = $es->get_aliases;
-
-    my @indices =$ElasticSearch::VERSION < 0.52
-        ? keys %{ $aliases->{indices} }
-        : keys %{ $aliases };
-
-    my $stats;
-    eval {
-        $stats = $es->index_stats(
-            index => \@indices,
-            docs  => 1,
-            store => 1,
-        );
-        1;
-    } or do {
-        die "[ERROR] failed to obtain stats for index: $str\n";
-    };
-
-
-  INDEX: for my $i ( keys %{ $stats->{_all}{indices} } ) {
-        next INDEX if $str and $i !~ /$str/;
-
-        my $size  = $stats->{_all}{indices}{$i}{primaries}{store}{size};
-        my $count = $stats->{_all}{indices}{$i}{primaries}{docs}{count};
-
-        printf "%s %s %s\n", $i, $size, $count;
-    }
-}
 
 sub index_ls_types {
     my ( $index ) = @_;
