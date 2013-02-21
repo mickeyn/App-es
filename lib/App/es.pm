@@ -2,7 +2,7 @@ package App::es;
 use strict;
 use warnings;
 use Moo;
-use MooX::Options;
+use MooX::Options protect_argv => 0;
 use ElasticSearch;
 
 our $VERSION = "0.1";
@@ -29,6 +29,8 @@ has es => (
     is => "lazy",
 );
 
+has _aliases => ( is => "lazy" );
+
 option long => (
     is => "ro",
     short => "l",
@@ -37,7 +39,15 @@ option long => (
 );
 
 sub _build_es {
-    return ElasticSearch->new( servers => $ENV{ELASTIC_SEARCH_SERVERS} );
+    return ElasticSearch->new(
+        servers     => $ENV{ELASTIC_SEARCH_SERVERS},
+        trace_calls => $ENV{ELASTIC_SEARCH_TRACE},
+    );
+}
+
+sub _build__aliases {
+    my $self = shift;
+    return $self->_get_elastic_search_aliases;
 }
 
 #### command handlers
@@ -83,6 +93,37 @@ sub command_ls {
     }
 }
 
+sub command_ls_types {
+    my ( $self, $index ) = @_;
+
+    my $es = $self->es;
+
+    my @indices = ( $index );
+    my @aliases = @{ $self->_aliases };
+
+    if ( grep { $index eq $_ } @aliases ) {
+        my $x = $self->_get_elastic_search_index_alias_mapping;
+        @indices = @{ $x->{$index} };
+    }
+
+    for my $n (@indices) {
+        my $mapping = $es->mapping( index => $n );
+
+    TYPE: for my $type ( keys %{ $mapping->{$n} } ) {
+            if ($self->long) {
+                my $search = $es->count(
+                    index => $n,
+                    type  => $type,
+                );
+
+                printf "%d\t%s\n", $search->{count}, $type;
+            }
+            else {
+                printf "%s\n", $type;
+            }
+        }
+    }
+}
 
 #### Non-command handlers
 
@@ -91,7 +132,7 @@ sub validate_params {
 
     my $es = $self->es;
 
-    my @aliases = @{ $self->_get_elastic_search_aliases };
+    my @aliases = @{ $self->_aliases };
 
     # index_ls
     if ( $cmd eq 'ls' ) {
@@ -191,6 +232,30 @@ sub _get_elastic_search_aliases {
     }
 
     return \@aliases;
+}
+
+sub _get_elastic_search_index_alias_mapping {
+    my ($self) = @_;
+    my $es = $self->es;
+    my $aliases = $es->get_aliases;
+    my %mapping;
+
+    if ($ElasticSearch::VERSION < 0.52) {
+        for (keys %{$aliases->{indices}}) {
+            push @{ $mapping{$_} ||=[] }, @{ $aliases->{indices}{$_} };
+        }
+        for (keys %{$aliases->{aliases}}) {
+            push @{ $mapping{$_} ||=[] }, @{ $aliases->{aliases}{$_} };
+        }
+    }
+    else {
+        for my $i (keys %$aliases) {
+            for my $a (@{ $mapping{$i} = [keys %{$aliases->{$i}{aliases}}] }) {
+                push @{$mapping{$a} ||=[]}, $i;
+            }
+        }
+    }
+    return \%mapping;
 }
 
 1;

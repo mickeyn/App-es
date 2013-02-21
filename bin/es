@@ -21,7 +21,13 @@ my $cmd = shift or do {
 
 die "illegal command\n" unless grep {/^$cmd$/} App::es::commands;
 
+print join "\t", @ARGV;
+print "\n";
 my $app = App::es->new_with_options;
+
+print join "\t", @ARGV;
+print "\n";
+
 my @params = @ARGV;
 
 my $es = $app->es;
@@ -30,8 +36,8 @@ my @aliases = @{ $app->_get_elastic_search_aliases };
 
 @params = $app->validate_params($cmd => @params);
 
-( $cmd eq 'ls'       ) and $app->command_ls( @params );
-( $cmd eq 'ls-types' ) and index_ls_types ( @params );
+( $cmd eq 'ls'       ) and $app->command_ls       ( @params );
+( $cmd eq 'ls-types' ) and $app->command_ls_types ( @params );
 ( $cmd eq 'create'   ) and index_create   ( @params );
 ( $cmd eq 'delete'   ) and index_delete   ( @params );
 ( $cmd eq 'put'      ) and index_put_doc  ( @params );
@@ -62,31 +68,6 @@ sub index_delete {
         ignore_missing => 1,
     );
     warn "[ERROR] failed to delete index: $index\n" unless $result->{ok};
-}
-
-
-sub index_ls_types {
-    my ( $index ) = @_;
-
-    my @indices = ( $index );
-
-    if ( grep { $index eq $_ } @aliases ) {
-        my $x = _get_elastic_search_index_alias_mapping($es);
-        @indices = @{ $x->{$index} };
-    }
-
-    for my $n (@indices) {
-        my $mapping = $es->mapping( index => $n );
-
-    TYPE: for my $type ( keys %{ $mapping->{$n} } ) {
-            my $search = $es->count(
-                index => $n,
-                type  => $type,
-            );
-
-            printf "%s: %s\n", $type, $search->{count};
-        }
-    }
 }
 
 sub index_put_doc {
@@ -176,30 +157,6 @@ sub index_unalias {
     ] );
     warn "[ERROR] failed to remove alias $alias for index $index\n" unless $result->{ok};
 }
-
-sub _get_elastic_search_index_alias_mapping {
-    my ($es) = @_;
-    my $aliases = $es->get_aliases;
-    my %mapping;
-
-    if ($ElasticSearch::VERSION < 0.52) {
-        for (keys %{$aliases->{indices}}) {
-            push @{ $mapping{$_} ||=[] }, @{ $aliases->{indices}{$_} };
-        }
-        for (keys %{$aliases->{aliases}}) {
-            push @{ $mapping{$_} ||=[] }, @{ $aliases->{aliases}{$_} };
-        }
-    }
-    else {
-        for my $i (keys %$aliases) {
-            for my $a (@{ $mapping{$i} = [keys %{$aliases->{$i}{aliases}}] }) {
-                push @{$mapping{$a} ||=[]}, $i;
-            }
-        }
-    }
-    return \%mapping;
-}
-
 
 __END__
 
