@@ -12,18 +12,6 @@ use JSON            qw{ decode_json to_json };
 
 use ElasticSearch;
 
-my @cmds = (qw/
-    alias
-    create
-    delete
-    get
-    ls
-    ls-types
-    put
-    search
-    unalias
-/);
-
 # get args
 my $cmd = shift or do {
     print "es - version $App::es::VERSION\n\n";
@@ -31,7 +19,7 @@ my $cmd = shift or do {
     Pod::Usage::pod2usage();
 };
 
-die "illegal command\n" unless grep {/^$cmd$/} @cmds;
+die "illegal command\n" unless grep {/^$cmd$/} App::es::commands;
 
 my @params = @ARGV;
 

@@ -3,10 +3,26 @@ use strict;
 use warnings;
 use Moo;
 use ElasticSearch;
-
 our $VERSION = "0.1";
 
-use List::MoreUtils qw{ uniq };
+####
+
+sub commands {
+    return qw/
+                 alias
+                 create
+                 delete
+                 get
+                 ls
+                 ls-types
+                 put
+                 search
+                 unalias
+             /;
+}
+
+
+####
 
 has es => (
     is => "ro",
@@ -35,8 +51,10 @@ sub validate_params {
 
     # check common params
     unless ( $cmd =~ /^(?:ls)$/ ) {
+        die "[ERROR] Missing index\n"
+            unless $index;
         die "[ERROR] illegal index name: $index\n"
-            unless $index and $index =~ /^[a-zA-Z0-9_-]+$/;
+            unless $index =~ /^[a-zA-Z0-9_-]+$/;
     }
 
     if ( $cmd =~ /^(?:put|search|get)$/ ) {
@@ -111,10 +129,11 @@ sub _get_elastic_search_aliases {
         @aliases = keys %{$aliases->{aliases}};
     }
     else {
+        my %uniq_aliases;
         for my $i (keys %$aliases) {
-            push @aliases, keys %{$aliases->{$i}{aliases}};
+            $uniq_aliases{$_} = 1 for keys %{$aliases->{$i}{aliases}};
         }
-        @aliases = uniq @aliases;
+        @aliases = keys %uniq_aliases;
     }
 
     return \@aliases;
