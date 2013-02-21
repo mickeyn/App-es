@@ -19,14 +19,14 @@ my $cmd = shift or do {
     Pod::Usage::pod2usage();
 };
 
-die "illegal command\n" unless grep {/^$cmd$/} App::es::commands;
+die "illegal command\n" unless App::es->is_command( $cmd );
 
-print join "\t", @ARGV;
-print "\n";
+#print join "\t", @ARGV;
+#print "\n";
 my $app = App::es->new_with_options;
 
-print join "\t", @ARGV;
-print "\n";
+#print join "\t", @ARGV;
+#print "\n";
 
 my @params = @ARGV;
 
@@ -34,7 +34,7 @@ my $es = $app->es;
 
 my @aliases = @{ $app->_get_elastic_search_aliases };
 
-@params = $app->validate_params($cmd => @params);
+$app->validate_params($cmd => \@params);
 
 ( $cmd eq 'ls'       ) and $app->command_ls       ( @params );
 ( $cmd eq 'ls-types' ) and $app->command_ls_types ( @params );
