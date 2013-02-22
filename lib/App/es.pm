@@ -4,8 +4,9 @@ use warnings;
 use JSON;
 use Moo;
 use MooX::Options protect_argv => 0;
+use Hash::Flatten qw(unflatten);
 use ElasticSearch;
-
+use File::Slurp qw(read_file);
 use App::es::ParamValidation;
 
 our $VERSION = "0.1";
@@ -26,6 +27,9 @@ my %commands = (
     'get-mapping'  => [ qw/ index_y / ],
     'get-settings' => [ qw/ index_y / ],
 
+    'put-mapping'  => [ qw/ index_y json_file / ],
+    'put-settings' => [ qw/ index_y json_file / ],
+
     search     => [ qw/ index_y type searchstr size / ],
 
     alias      => [ qw/ index_y_notalias alias_n / ],
@@ -45,6 +49,20 @@ option long => (
     short => "l",
     default => sub { 0 },
     documentation => "Long format in the output."
+);
+
+option settings => (
+    is => "ro",
+    format => "s",
+    documentation => "The settings json file.",
+    isa => App::es::ParamValidation->get_validator("json_file")
+);
+
+option mapping => (
+    is => "ro",
+    format => "s",
+    documentation => "The mapping json file.",
+    isa => App::es::ParamValidation->get_validator("json_file")
 );
 
 sub _build_es {
@@ -182,10 +200,41 @@ sub command_get_mapping {
 sub command_get_settings {
     my ($self, $index) = @_;
     my $result = $self->es->index_settings(index => $index);
-    print JSON::to_json(
-        $result->{$index},
-        { pretty => 1 }
+
+    my $settings = $result->{$index}{settings};
+    print JSON::to_json($settings, { pretty => 1 });
+}
+
+sub command_put_settings {
+    my ($self, $index, $doc ) = @_;
+    my $settings = JSON::decode_json read_file $doc;
+
+    my $result = $self->es->update_index_settings(
+        index    => $index,
+        settings => $settings
     );
+    warn "[ERROR] failed to update index settings\n" unless $result->{ok};
+}
+
+sub command_create {
+    my ( $self, $index ) = @_;
+
+    my ($settings, $mapping);
+    $settings = JSON::decode_json( read_file($self->settings) ) if $self->settings;
+    $mapping  = JSON::decode_json( read_file($self->mapping)  ) if $self->mapping;
+
+    my $result;
+    eval {
+        $result = $self->es->create_index(
+            index => $index,
+            $settings ? ( settings => $settings ) : (),
+            $mapping  ? ( mappings => $mapping  ) : (),
+        );
+        1;
+    };
+
+    warn "[ERROR] failed to create index: $index\n"
+        unless ref($result) eq 'HASH' and $result->{ok};
 }
 
 #### Non-command handlers
