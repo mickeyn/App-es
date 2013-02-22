@@ -20,6 +20,7 @@ my %commands = (
 
     create     => [ qw/ index_n / ],
     delete     => [ qw/ index_y / ],
+    reindex    => [ qw/ index_y index_y / ],
 
     get        => [ qw/ index_y type doc_id / ],
     put        => [ qw/ index_y type json_file / ],
@@ -236,6 +237,21 @@ sub command_create {
     warn "[ERROR] failed to create index: $index\n"
         unless ref($result) eq 'HASH' and $result->{ok};
 }
+
+sub command_reindex {
+    my ( $self, $index_src, $index_dest ) = @_;
+    my $es = $self->es;
+    $es->reindex(
+        source => $es->scrolled_search(
+            query => { match_all => {} },
+            search_type => "scan",
+            scroll => "10m",
+            index  => $index_src,
+        ),
+        dest_index => $index_dest,
+    );
+}
+
 
 #### Non-command handlers
 

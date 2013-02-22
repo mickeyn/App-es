@@ -38,6 +38,7 @@ $app->validate_params($cmd => \@params);
 ( $cmd eq 'get-settings' ) and $app->command_get_settings( @params );
 ( $cmd eq 'put-mapping'  ) and $app->command_put_mapping ( @params );
 ( $cmd eq 'put-settings' ) and $app->command_put_settings( @params );
+( $cmd eq 'reindex'  )   and $app->command_reindex( @params );
 ( $cmd eq 'create'   ) and $app->command_create( @params );
 ( $cmd eq 'delete'   ) and index_delete   ( @params );
 ( $cmd eq 'put'      ) and index_put_doc  ( @params );
