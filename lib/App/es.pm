@@ -1,6 +1,7 @@
 package App::es;
 use strict;
 use warnings;
+use JSON;
 use Moo;
 use MooX::Options protect_argv => 0;
 use ElasticSearch;
@@ -21,6 +22,9 @@ my %commands = (
 
     get        => [ qw/ index_y type doc_id / ],
     put        => [ qw/ index_y type json_file / ],
+
+    'get-mapping'  => [ qw/ index_y / ],
+    'get-settings' => [ qw/ index_y / ],
 
     search     => [ qw/ index_y type searchstr size / ],
 
@@ -164,6 +168,24 @@ sub command_ls_aliases {
     return unless ref($aliases) eq 'HASH' and exists $aliases->{$index};
 
     print "$_\n" for @{ $aliases->{$index} };
+}
+
+sub command_get_mapping {
+    my ($self, $index) = @_;
+    my $result = $self->es->mapping(index => $index);
+    print JSON::to_json(
+        $result->{$index},
+        { pretty => 1 }
+    );
+}
+
+sub command_get_settings {
+    my ($self, $index) = @_;
+    my $result = $self->es->index_settings(index => $index);
+    print JSON::to_json(
+        $result->{$index},
+        { pretty => 1 }
+    );
 }
 
 #### Non-command handlers

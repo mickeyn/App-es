@@ -34,6 +34,8 @@ $app->validate_params($cmd => \@params);
 ( $cmd eq 'ls'       ) and $app->command_ls       ( @params );
 ( $cmd eq 'ls-types' ) and $app->command_ls_types ( @params );
 ( $cmd eq 'ls-aliases' ) and $app->command_ls_aliases ( @params );
+( $cmd eq 'get-mapping' ) and $app->command_get_mapping ( @params );
+( $cmd eq 'get-settings' ) and $app->command_get_settings ( @params );
 ( $cmd eq 'create'   ) and index_create   ( @params );
 ( $cmd eq 'delete'   ) and index_delete   ( @params );
 ( $cmd eq 'put'      ) and index_put_doc  ( @params );
