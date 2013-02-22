@@ -164,6 +164,10 @@ es -- The command line client of ElasticSearch.
     es create <index>
     es delete <index>
 
+    es get-settings <index>
+    es get-mapping <index>
+    es reindex <index_from> <index_to>
+
     # Indexing / getting a document
     es put <index> <doc> # doc needs to be a JSON file
     es get <name> <type> <doc_id>
@@ -206,13 +210,35 @@ List all document type of the given index.
 
 List all aliases of the given index.
 
-=head2 create <index>
+=head2 create <index> [--mapping mapping.json] [--settings settings.json]
 
-Create the index.
+Create the index. Optionally takes settings and mapping from JSON files. These
+JSON files can be accquired by invoking L</get-settings> or L</get-mapping>
+command on existing indices.
 
 =head2 delete <index>
 
 Delete the index
+
+=head2 reindex <index_from> <index_to>
+
+Reindex all documents in <index_from> into <index_to>. It is required that
+<index_to> is created first.
+
+=head2 get-mapping <index>
+
+Get the mapping of an existing index. It prints the mapping in JSON text.
+
+=head2 get-settings <index>
+
+Get the settings of an existing index. It prints the settings in JSON text.
+Something looks like this:
+
+    {
+       "index.number_of_replicas" : "1",
+       "index.number_of_shards" : "5",
+       "index.version.created" : "191099"
+    }
 
 =head2 alias <index> <alias>
 
