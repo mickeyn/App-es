@@ -7,8 +7,8 @@ use App::es;
 
 use encoding 'utf8';
 use Term::ANSIColor;
-use File::Slurp     qw{ read_file };
-use JSON            qw{ decode_json to_json };
+use File::Slurp qw{ read_file };
+use JSON        qw{ decode_json to_json };
 
 use ElasticSearch;
 
@@ -21,12 +21,7 @@ my $cmd = shift or do {
 
 die "illegal command\n" unless App::es->is_command( $cmd );
 
-#print join "\t", @ARGV;
-#print "\n";
 my $app = App::es->new_with_options;
-
-#print join "\t", @ARGV;
-#print "\n";
 
 my @params = @ARGV;
 
@@ -47,6 +42,7 @@ $app->validate_params($cmd => \@params);
 ( $cmd eq 'unalias'  ) and index_unalias  ( @params );
 
 exit 0;
+
 sub index_create {
     my ( $index ) = @_;
 
