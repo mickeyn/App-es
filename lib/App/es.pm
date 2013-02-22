@@ -12,8 +12,9 @@ our $VERSION = "0.1";
 ####
 
 my %commands = (
-    ls         => [ qw/ subname / ],
-    'ls-types' => [ qw/ index_y / ],
+    ls           => [ qw/ subname / ],
+    'ls-types'   => [ qw/ index_y / ],
+    'ls-aliases' => [ qw/ index_y / ],
 
     create     => [ qw/ index_n / ],
     delete     => [ qw/ index_y / ],
@@ -154,6 +155,15 @@ sub command_ls_types {
             }
         }
     }
+}
+
+sub command_ls_aliases {
+    my ( $self, $index ) = @_;
+
+    my $aliases = $self->_get_elastic_search_index_alias_mapping;
+    return unless ref($aliases) eq 'HASH' and exists $aliases->{$index};
+
+    print "$_\n" for @{ $aliases->{$index} };
 }
 
 #### Non-command handlers

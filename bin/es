@@ -33,6 +33,7 @@ $app->validate_params($cmd => \@params);
 
 ( $cmd eq 'ls'       ) and $app->command_ls       ( @params );
 ( $cmd eq 'ls-types' ) and $app->command_ls_types ( @params );
+( $cmd eq 'ls-aliases' ) and $app->command_ls_aliases ( @params );
 ( $cmd eq 'create'   ) and index_create   ( @params );
 ( $cmd eq 'delete'   ) and index_delete   ( @params );
 ( $cmd eq 'put'      ) and index_put_doc  ( @params );
@@ -165,6 +166,7 @@ es -- The command line client of ElasticSearch.
     # List document count / size per index / type
     es ls
     es ls-types <index>
+    es ls-aliases <index> # list aliases of an index
 
     # Create / delete an index
     es create <index>
@@ -207,6 +209,10 @@ List all indices. Or if a sub-string is provided, list only matching ones.
 =head2 ls-types <index>
 
 List all document type of the given index.
+
+=head2 ls-aliases <index>
+
+List all aliases of the given index.
 
 =head2 create <index>
 
