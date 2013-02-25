@@ -1,14 +1,17 @@
 package App::es;
 use strict;
 use warnings;
-use JSON;
+
+use App::es::ParamValidation;
+
+use JSON qw( decode_json to_json );
+use Term::ANSIColor;
+
 use Moo;
 use MooX::Options protect_argv => 0;
-use Hash::Flatten qw(unflatten);
+
 use ElasticSearch;
-use File::Slurp qw(read_file);
-use App::es::ParamValidation;
-use Term::ANSIColor;
+use File::Slurp qw( read_file );
 
 our $VERSION = "0.1";
 
@@ -114,7 +117,7 @@ sub command_ls {
 
     my $aliases = $es->get_aliases;
 
-    my @indices =$ElasticSearch::VERSION < 0.52
+    my @indices = $ElasticSearch::VERSION < 0.52
         ? keys %{ $aliases->{indices} }
         : keys %{ $aliases };
 
@@ -193,7 +196,7 @@ sub command_ls_aliases {
 sub command_get_mapping {
     my ($self, $index) = @_;
     my $result = $self->es->mapping(index => $index);
-    print JSON::to_json(
+    print to_json(
         $result->{$index},
         { pretty => 1 }
     );
@@ -204,12 +207,12 @@ sub command_get_settings {
     my $result = $self->es->index_settings(index => $index);
 
     my $settings = $result->{$index}{settings};
-    print JSON::to_json($settings, { pretty => 1 });
+    print to_json($settings, { pretty => 1 });
 }
 
 sub command_put_settings {
     my ($self, $index, $doc ) = @_;
-    my $settings = JSON::decode_json read_file $doc;
+    my $settings = decode_json( read_file($doc) );
 
     my $result = $self->es->update_index_settings(
         index    => $index,
@@ -222,8 +225,8 @@ sub command_create {
     my ( $self, $index ) = @_;
 
     my ($settings, $mapping);
-    $settings = JSON::decode_json( read_file($self->settings) ) if $self->settings;
-    $mapping  = JSON::decode_json( read_file($self->mapping)  ) if $self->mapping;
+    $settings = decode_json( read_file($self->settings) ) if $self->settings;
+    $mapping  = decode_json( read_file($self->mapping)  ) if $self->mapping;
 
     my $result;
     eval {

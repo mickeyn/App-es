@@ -6,9 +6,6 @@ use warnings;
 use App::es;
 
 use encoding 'utf8';
-use Term::ANSIColor;
-use File::Slurp qw{ read_file };
-use JSON        qw{ decode_json to_json };
 
 # get args
 my $cmd = shift or do {
