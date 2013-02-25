@@ -43,7 +43,7 @@ $app->validate_params($cmd => \@params);
 ( $cmd eq 'delete'   ) and index_delete   ( @params );
 ( $cmd eq 'put'      ) and index_put_doc  ( @params );
 ( $cmd eq 'search'   ) and index_search   ( @params );
-( $cmd eq 'get'      ) and index_get      ( @params );
+( $cmd eq 'get'      ) and $app->command_get( @params );
 ( $cmd eq 'alias'    ) and index_alias    ( @params );
 ( $cmd eq 'unalias'  ) and index_unalias  ( @params );
 
@@ -115,18 +115,6 @@ sub index_search {
             printf "%s: %s\n", colored ($o->{id}, 'cyan'), $line;
         }
     }
-}
-
-sub index_get {
-    my ( $index, $type, $doc_id ) = @_;
-
-    my $get = $es->get(
-        index => $index,
-        type  => $type,
-        id    => $doc_id,
-    );
-
-    print to_json($get->{_source}, { pretty => 1 }), "\n";
 }
 
 sub index_alias {

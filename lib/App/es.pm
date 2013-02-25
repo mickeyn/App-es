@@ -252,6 +252,18 @@ sub command_reindex {
     );
 }
 
+sub command_get {
+    my ( $self, $index, $type, $doc_id ) = @_;
+
+    my $get = $self->es->get(
+        index => $index,
+        type  => $type,
+        id    => $doc_id,
+    );
+
+    print to_json($get->{_source}, { pretty => 1 }), "\n";
+}
+
 
 #### Non-command handlers
 
