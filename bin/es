@@ -10,8 +10,6 @@ use Term::ANSIColor;
 use File::Slurp qw{ read_file };
 use JSON        qw{ decode_json to_json };
 
-use ElasticSearch;
-
 # get args
 my $cmd = shift or do {
     print "es - version $App::es::VERSION\n\n";
@@ -40,61 +38,15 @@ $app->validate_params($cmd => \@params);
 ( $cmd eq 'put-settings' ) and $app->command_put_settings( @params );
 ( $cmd eq 'reindex'  )   and $app->command_reindex( @params );
 ( $cmd eq 'create'   ) and $app->command_create( @params );
-( $cmd eq 'delete'   ) and index_delete   ( @params );
-( $cmd eq 'put'      ) and index_put_doc  ( @params );
+( $cmd eq 'delete'   ) and $app->command_delete( @params );
+( $cmd eq 'put'      ) and $app->command_put( @params );
 ( $cmd eq 'search'   ) and $app->command_search( @params );
 ( $cmd eq 'get'      ) and $app->command_get( @params );
-( $cmd eq 'alias'    ) and index_alias    ( @params );
-( $cmd eq 'unalias'  ) and index_unalias  ( @params );
+( $cmd eq 'alias'    ) and $app->command_alias( @params );
+( $cmd eq 'unalias'  ) and $app->command_unalias( @params );
 
 exit 0;
 
-sub index_delete {
-    my ( $index ) = @_;
-
-    my $result = $es->delete_index(
-        index => $index,
-        ignore_missing => 1,
-    );
-    warn "[ERROR] failed to delete index: $index\n" unless $result->{ok};
-}
-
-sub index_put_doc {
-    my ( $index, $type, $doc ) = @_;
-
-    my $json;
-    eval {
-        $json = decode_json( read_file($doc) );
-        1;
-    } or do {
-        die "[ERROR] invlid json data in $doc\n";
-    };
-
-    $es->index(
-        index => $index,
-        type  => $type,
-        data  => $json,
-        create => 1
-    );
-}
-
-sub index_alias {
-    my ( $index, $alias ) = @_;
-
-    my $result = $es->aliases( actions => [
-        { add => { index => $index, alias => $alias } }
-    ] );
-    warn "[ERROR] failed to create alias $alias for index $index\n" unless $result->{ok};
-}
-
-sub index_unalias {
-    my ( $index, $alias ) = @_;
-
-    my $result = $es->aliases( actions => [
-        { remove => { index => $index, alias => $alias } }
-    ] );
-    warn "[ERROR] failed to remove alias $alias for index $index\n" unless $result->{ok};
-}
 
 __END__
 

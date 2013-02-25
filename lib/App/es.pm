@@ -304,6 +304,53 @@ sub command_search {
     }
 }
 
+sub command_delete {
+    my ( $self, $index ) = @_;
+
+    my $result = $self->es->delete_index(
+        index => $index,
+        ignore_missing => 1,
+    );
+    warn "[ERROR] failed to delete index: $index\n" unless $result->{ok};
+}
+
+sub command_put {
+    my ( $self, $index, $type, $doc ) = @_;
+
+    my $json;
+    eval {
+        $json = decode_json( read_file($doc) );
+        1;
+    } or do {
+        die "[ERROR] invlid json data in $doc\n";
+    };
+
+    $self->es->index(
+        index => $index,
+        type  => $type,
+        data  => $json,
+        create => 1
+    );
+}
+
+sub command_alias {
+    my ( $self, $index, $alias ) = @_;
+
+    my $result = $self->es->aliases( actions => [
+        { add => { index => $index, alias => $alias } }
+    ] );
+    warn "[ERROR] failed to create alias $alias for index $index\n" unless $result->{ok};
+}
+
+sub command_unalias {
+    my ( $self, $index, $alias ) = @_;
+
+    my $result = $self->es->aliases( actions => [
+        { remove => { index => $index, alias => $alias } }
+    ] );
+    warn "[ERROR] failed to remove alias $alias for index $index\n" unless $result->{ok};
+}
+
 #### Non-command handlers
 
 sub _get_elastic_search_aliases {
@@ -328,8 +375,7 @@ sub _get_elastic_search_aliases {
 
 sub _get_elastic_search_index_alias_mapping {
     my ($self) = @_;
-    my $es = $self->es;
-    my $aliases = $es->get_aliases;
+    my $aliases = $self->es->get_aliases;
     my %mapping;
 
     if ($ElasticSearch::VERSION < 0.52) {
