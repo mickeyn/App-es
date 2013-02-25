@@ -8,6 +8,7 @@ use Hash::Flatten qw(unflatten);
 use ElasticSearch;
 use File::Slurp qw(read_file);
 use App::es::ParamValidation;
+use Term::ANSIColor;
 
 our $VERSION = "0.1";
 
@@ -264,6 +265,44 @@ sub command_get {
     print to_json($get->{_source}, { pretty => 1 }), "\n";
 }
 
+sub command_search {
+    my ( $self, $index, $type, $string, $size ) = @_;
+
+    my ( $field, $text ) = split q{:} => $string;
+    my $query = {
+        query_string => {
+            default_field => $field,
+            query         => $text,
+        }
+    };
+
+    my $result = $self->es->search(
+        index => $index,
+        type  => $type,
+        size  => $size || 24,
+        query => $query,
+        highlight => { fields => { $field => {} },
+                       pre_tags  => [ '__STARTCOLOR__' ],
+                       post_tags => [ '__ENDCOLOR__' ],
+                     },
+    );
+
+    my @output =
+        map { { id => $_->{_id},
+                lines => $_->{highlight}{$field},
+              }
+            }
+        @{ $result->{hits}{hits} };
+
+    for my $o ( @output ) {
+        for my $line ( @{ $o->{lines} } ) {
+            $line =~ s/\n/ /g;
+            $line =~ s/__STARTCOLOR__/color 'bold red'/eg;
+            $line =~ s/__ENDCOLOR__/color 'reset'/eg;
+            printf "%s: %s\n", colored ($o->{id}, 'cyan'), $line;
+        }
+    }
+}
 
 #### Non-command handlers
 

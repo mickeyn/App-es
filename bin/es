@@ -42,7 +42,7 @@ $app->validate_params($cmd => \@params);
 ( $cmd eq 'create'   ) and $app->command_create( @params );
 ( $cmd eq 'delete'   ) and index_delete   ( @params );
 ( $cmd eq 'put'      ) and index_put_doc  ( @params );
-( $cmd eq 'search'   ) and index_search   ( @params );
+( $cmd eq 'search'   ) and $app->command_search( @params );
 ( $cmd eq 'get'      ) and $app->command_get( @params );
 ( $cmd eq 'alias'    ) and index_alias    ( @params );
 ( $cmd eq 'unalias'  ) and index_unalias  ( @params );
@@ -76,45 +76,6 @@ sub index_put_doc {
         data  => $json,
         create => 1
     );
-}
-
-sub index_search {
-    my ( $index, $type, $string, $size ) = @_;
-
-    my ( $field, $text ) = split q{:} => $string;
-    my $query = {
-        query_string => {
-            default_field => $field,
-            query         => $text,
-        }
-    };
-
-    my $result = $es->search(
-        index => $index,
-        type  => $type,
-        size  => $size || 24,
-        query => $query,
-        highlight => { fields => { $field => {} },
-                       pre_tags  => [ '__STARTCOLOR__' ],
-                       post_tags => [ '__ENDCOLOR__' ],
-                     },
-    );
-
-    my @output =
-        map { { id => $_->{_id},
-                lines => $_->{highlight}{$field},
-              }
-            }
-        @{ $result->{hits}{hits} };
-
-    for my $o ( @output ) {
-        for my $line ( @{ $o->{lines} } ) {
-            $line =~ s/\n/ /g;
-            $line =~ s/__STARTCOLOR__/color 'bold red'/eg;
-            $line =~ s/__ENDCOLOR__/color 'reset'/eg;
-            printf "%s: %s\n", colored ($o->{id}, 'cyan'), $line;
-        }
-    }
 }
 
 sub index_alias {
