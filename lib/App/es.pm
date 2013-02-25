@@ -3,15 +3,15 @@ use strict;
 use warnings;
 
 use App::es::ParamValidation;
-
 use JSON qw( decode_json to_json );
+use ElasticSearch;
+use File::Slurp qw(read_file);
 use Term::ANSIColor;
+use URI;
+use URI::Split qw(uri_split);
 
 use Moo;
 use MooX::Options protect_argv => 0;
-
-use ElasticSearch;
-use File::Slurp qw( read_file );
 
 our $VERSION = "0.1";
 
@@ -25,6 +25,7 @@ my %commands = (
     create     => [ qw/ index_n / ],
     delete     => [ qw/ index_y / ],
     reindex    => [ qw/ index_y index_y / ],
+    copy       => [ qw/ index_fq index_fq / ],
 
     get        => [ qw/ index_y type doc_id / ],
     put        => [ qw/ index_y type json_file / ],
@@ -93,17 +94,13 @@ sub validate_params {
     my ( $self, $cmd, $params ) = @_;
     my @params = @$params;
 
-    my $es = $self->es;
-
-    my $aliases = $es->get_aliases;
-
     for my $arg_type ( @{ $commands{$cmd} } ) {
         my $param = shift @params;
 
         my $validator = App::es::ParamValidation->get_validator( $arg_type )
             or die "[ERROR] invalid arg type defined for command: $cmd\n";
 
-        $validator->( $param, $es, $aliases );
+        $validator->( $param, $self );
     }
 
     die "[ERROR] too many arguments for command: $cmd\n"
@@ -354,8 +351,75 @@ sub command_unalias {
     warn "[ERROR] failed to remove alias $alias for index $index\n" unless $result->{ok};
 }
 
+sub command_copy {
+    my ( $self, $index_fq_src, $index_fq_dest ) = @_;
+    my $source = $self->_es_from_url( $index_fq_src );
+    my $destination = $self->_es_from_url( $index_fq_dest );
+
+    my $res = $destination->{es}->index_exists( index => $destination->{index} );
+
+    if ($source->{hostport} eq $destination->{hostport}) {
+        if ($source->{index} eq $destination->{index}) {
+            die "[ERROR] Copying an index to itself -- that is not going to work.\n";
+        }
+    }
+    if ($res) {
+        die "[ERROR] Destinationination index <$destination->{index}> already exists\n";
+    }
+
+    print "Creating destination index <$destination->{index}> with the same settings/mappings\n";
+    my $settings = $source->{es}->index_settings( index => $source->{index} )->{$source->{index}}{settings};
+    my $mappings = $source->{es}->mapping( index => $source->{index} )->{$source->{index}};
+    $destination->{es}->create_index(
+        index => $destination->{index},
+        settings => $settings,
+        mappings => $mappings
+    );
+    print "Copying documents over.\n";
+    my $t0 = time;
+    $destination->{es}->reindex(
+        source => $source->{es}->scrolled_search(
+            query => { match_all => {} },
+            search_type => "scan",
+            scroll => "10m",
+            index => $source->{index}
+        ),
+        dest_index => $destination->{index}
+    );
+
+    my $t0_elapsed = time - $t0;
+    print "Done. took $t0_elapsed seconds\n";
+}
+
 #### Non-command handlers
 
+sub _es_from_url {
+    my ($self, $url) = @_;
+
+    my ($scheme, $hostport, $path, undef, undef) = uri_split($url);
+
+    my $index = $path;
+    $index =~ s{^/}{};
+    $index =~ s{/$}{};
+
+    if (index($index, "/") >= 0) {
+        warn "<$path> looks like index_name/index_type. Removing the index_type part\n";
+        $index =~ s{/.*$}{};
+    }
+
+    my $es = ElasticSearch->new(
+        servers => $hostport,
+        timeout => 0,
+        max_requests => 0,
+        no_refresh => 1
+    );
+
+    return {
+        es    => $es,
+        index => $index,
+        hostport => $hostport
+    }
+}
 sub _get_elastic_search_aliases {
     my ($self) = @_;
 

@@ -2,6 +2,7 @@ package App::es::ParamValidation;
 
 use File::Slurp qw{ read_file };
 use JSON        qw{ decode_json };
+use URI::Split  qw{ uri_split };
 
 our $VERSION = "0.1";
 
@@ -29,7 +30,7 @@ my %validation = (
     index_y => sub {
         die "[ERROR] invalid index/alias name: $_[0]\n"
             unless $_[0] and $_[0] =~ /^[a-zA-Z0-9_-]+$/;
-        my $check = $_[1]->index_exists(index=>$_[0]);
+        my $check = $_[1]->es->index_exists(index=>$_[0]);
         die "[ERROR] index/alias does not exists: $_[0]\n"
             unless $check and ref($check) eq 'HASH' and $check->{ok};
         1;
@@ -38,7 +39,7 @@ my %validation = (
     index_n => sub {
         die "[ERROR] invalid index/alias name: $_[0]\n"
             unless $_[0] and $_[0] =~ /^[a-zA-Z0-9_-]+$/;
-        my $check = $_[1]->index_exists(index=>$_[0]);
+        my $check = $_[1]->es->index_exists(index=>$_[0]);
         die "[ERROR] index/alias already exists: $_[0]\n"
             if $check and ref($check) eq 'HASH' and $check->{ok};
         1;
@@ -65,12 +66,21 @@ my %validation = (
         die "[ERROR] invalid size: $_[0]\n"
             unless $_[0] and $_[0] =~ /^[0-9]*$/;
     },
+
+    index_fq => sub {
+        my ($scheme, $hostport, $path, undef, undef) = uri_split($_[0]);
+        die "Error: $_[0] is not a full URL for an index." unless $hostport && $path;
+        $path =~ s{^/}{};
+        $path =~ s{/$}{};
+        die "Error: $_[0] does not refers to an index." if $path =~ m{/};
+    },
 );
 
 $validation{index_y_notalias} = sub {
+    my $aliases = $_[1]->es->get_aliases;
     if ( $validation{index_y}->(@_) ) {
         die "[ERROR] index $_[0] is an anlias\n"
-            if grep { /^$_[0]$/ } @$_[2];
+            if grep { /^$_[0]$/ } @$aliases;
     }
     1;
 };

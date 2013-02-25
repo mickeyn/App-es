@@ -41,6 +41,7 @@ $app->validate_params($cmd => \@params);
 ( $cmd eq 'get'      ) and $app->command_get( @params );
 ( $cmd eq 'alias'    ) and $app->command_alias( @params );
 ( $cmd eq 'unalias'  ) and $app->command_unalias( @params );
+( $cmd eq 'copy'     ) and $app->command_copy( @params );
 
 exit 0;
 
