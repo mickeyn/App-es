@@ -74,10 +74,15 @@ my %validation = (
         $path =~ s{/$}{};
         die "Error: $_[0] does not refers to an index." if $path =~ m{/};
     },
+
+    alias_n => sub {
+        die "[ERROR] invalid index/alias name: $_[0]\n"
+        unless $_[0] and $_[0] =~ /^[a-zA-Z0-9_-]+$/;
+    }
 );
 
 $validation{index_y_notalias} = sub {
-    my $aliases = $_[1]->es->get_aliases;
+    my $aliases = $_[1]->_get_elastic_search_aliases;
     if ( $validation{index_y}->(@_) ) {
         die "[ERROR] index $_[0] is an anlias\n"
             if grep { /^$_[0]$/ } @$aliases;
@@ -86,8 +91,6 @@ $validation{index_y_notalias} = sub {
 };
 
 $validation{alias_y} = $validation{index_y};
-$validation{alias_n} = $validation{index_n};
-
 
 sub get_validator {
     my ( $class, $arg_type ) = @_;
