@@ -8,7 +8,7 @@ our $VERSION = "0.1";
 
 my %validation = (
 
-    subname => sub {
+    subname_opt => sub {
         return 1 unless $_[0]; # optional
         die "[ERROR] invalid index name sub-string: $_[0]\n"
             unless $_[0] =~ /^[a-zA-Z0-9_-]*$/;
@@ -62,7 +62,8 @@ my %validation = (
         1;
     },
 
-    size => sub {
+    size_opt => sub {
+        return 1 unless $_[0]; # optional
         die "[ERROR] invalid size: $_[0]\n"
             unless $_[0] and $_[0] =~ /^[0-9]*$/;
     },

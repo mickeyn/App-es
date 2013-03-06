@@ -18,7 +18,7 @@ our $VERSION = "0.1";
 ####
 
 my %commands = (
-    ls           => [ qw/ subname / ],
+    ls           => [ qw/ subname_opt / ],
     'ls-types'   => [ qw/ index_y / ],
     'ls-aliases' => [ qw/ index_y / ],
 
@@ -36,7 +36,7 @@ my %commands = (
     'put-mapping'  => [ qw/ index_y json_file / ],
     'put-settings' => [ qw/ index_y json_file / ],
 
-    search     => [ qw/ index_y type searchstr size / ],
+    search     => [ qw/ index_y type searchstr size_opt / ],
 
     alias      => [ qw/ index_y_notalias alias_n / ],
     unalias    => [ qw/ index_y_notalias alias_y / ],

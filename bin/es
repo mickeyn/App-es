@@ -59,7 +59,7 @@ es -- The command line client of ElasticSearch.
 =head1 SYNOPSIS
 
     # List document count / size per index / type
-    es ls
+    es ls [<index_name_substring>]
     es ls-types <index>
     es ls-aliases <index> # list aliases of an index
 
