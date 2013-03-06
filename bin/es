@@ -86,11 +86,11 @@ This program can be used to basic manipulation for day-to-day development need
 with ElasticSearch server. The default server is C<localhost:9200>, to use
 different server, you can change it with C<ELASTIC_SEARCH_SERVERS> environment variable.
 
-    ESASTIC_SEARCH_SERVERS=search-server.company.com:9200
+    ELASTIC_SEARCH_SERVERS=search-server.company.com:9200
 
 You may supply a list of servers seperate by comma
 
-    ESASTIC_SEARCH_SERVERS=search-server-1.company.com:9200,search-server-2.company.com:9200
+    ELASTIC_SEARCH_SERVERS=search-server-1.company.com:9200,search-server-2.company.com:9200
 
 The list of servers are used in a round-robin manner, which is the default
 behaviour of the underlying L<ElasticSearch> perl module.
