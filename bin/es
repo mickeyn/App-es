@@ -69,14 +69,14 @@ es -- The command line client of ElasticSearch.
 
     # Indexing / getting a document
     es put <index> <doc> # doc needs to be a JSON file
-    es get <name> <type> <doc_id>
+    es get <index> <type> <doc_id>
 
     # Search by a field
-    es search <name> <type> <field>:<search string> [<size>]
+    es search <index> <type> <field>:<search string> [<size>]
 
     # Aliasing
-    es alias   <index-name> <alias>
-    es unalias <index-name> <alias>
+    es alias   <index> <alias>
+    es unalias <index> <alias>
 
 See `perldoc es` for more info.
 
