@@ -85,6 +85,7 @@ sub _build_es {
         servers     => $ENV{ELASTIC_SEARCH_SERVERS},
         trace_calls => $ENV{ELASTIC_SEARCH_TRACE},
         transport   => $ENV{ELASTIC_SEARCH_TRANSPORT} || ($^V gt v5.14.0 ? "httptiny" : "http"),
+        timeout     => $ENV{ELASTIC_SEARCH_TIMEOUT} || "10", # seconds
     );
 }
 
@@ -279,38 +280,51 @@ sub command_get {
 sub command_search {
     my ( $self, $index, $type, $string ) = @_;
 
-    my ( $field, $text ) = split q{:} => $string;
+    my ( $field, $text );
+    if ($string =~ /:/) {
+        ( $field, $text ) = split q{:} => $string;
+    }
+    else {
+        $text = $string;
+    }
+    $field ||= "_all";
+
     my $query = {
         query_string => {
+            query => $text,
             default_field => $field,
-            query         => $text,
         }
     };
+
+    my @highlight = ();
+    if ($field) {
+        @highlight = (
+            highlight => {
+                fields => { $field => {} },
+                pre_tags  => [ '__STARTCOLOR__' ],
+                post_tags => [ '__ENDCOLOR__' ],
+            }
+        );
+    }
 
     my $result = $self->es->search(
         index => $index,
         type  => $type,
         size  => $self->size,
         query => $query,
-        highlight => { fields => { $field => {} },
-                       pre_tags  => [ '__STARTCOLOR__' ],
-                       post_tags => [ '__ENDCOLOR__' ],
-                     },
+        @highlight,
     );
 
-    my @output =
-        map { { id => $_->{_id},
-                lines => $_->{highlight}{$field},
-              }
+    for my $hit (@{ $result->{hits}{hits} }) {
+        printf "%s\n", colored($hit->{_id}, 'cyan');
+        for my $field (keys %{$hit->{highlight}}) {
+            printf "  %s:\n", $field;
+            for my $line (@{$hit->{highlight}{$field}}) {
+                $line =~ s/\n/ /g;
+                $line =~ s/__STARTCOLOR__/color 'bold red'/eg;
+                $line =~ s/__ENDCOLOR__/color 'reset'/eg;
+                printf "    - %s\n", $line;
             }
-        @{ $result->{hits}{hits} };
-
-    for my $o ( @output ) {
-        for my $line ( @{ $o->{lines} } ) {
-            $line =~ s/\n/ /g;
-            $line =~ s/__STARTCOLOR__/color 'bold red'/eg;
-            $line =~ s/__ENDCOLOR__/color 'reset'/eg;
-            printf "%s: %s\n", colored ($o->{id}, 'cyan'), $line;
         }
     }
 }
