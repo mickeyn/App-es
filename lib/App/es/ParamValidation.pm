@@ -62,6 +62,15 @@ my %validation = (
         1;
     },
 
+    string => sub {
+        die "[ERROR] missing string"
+            unless $_[0];
+        utf8::decode($_[0]);
+        die "[ERROR] invalid string: $_[0]\n"
+            unless $_[0] =~ /^[\w\d_\s-]+$/x;
+        1;
+    },
+
     size_opt => sub {
         return 1 unless $_[0]; # optional
         die "[ERROR] invalid size: $_[0]\n"

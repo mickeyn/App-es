@@ -37,6 +37,7 @@ my %commands = (
     'put-settings' => [ qw/ index_y json_file / ],
 
     search     => [ qw/ index_y type searchstr size_opt / ],
+    scan       => [ qw/ index_y type string size_opt / ],
 
     alias      => [ qw/ index_y_notalias alias_n / ],
     unalias    => [ qw/ index_y_notalias alias_y / ],
@@ -261,7 +262,7 @@ sub command_get {
         type  => $type,
         id    => $doc_id,
     );
-
+    return unless exists $get->{_source};
     print to_json($get->{_source}, { pretty => 1 }), "\n";
 }
 
@@ -301,6 +302,28 @@ sub command_search {
             $line =~ s/__ENDCOLOR__/color 'reset'/eg;
             printf "%s: %s\n", colored ($o->{id}, 'cyan'), $line;
         }
+    }
+}
+
+sub command_scan {
+    my ( $self, $index, $type, $string, $size ) = @_;
+
+    my $query = {
+        query_string => {
+            query => $string,
+        }
+    };
+
+    my $scroller = $self->es->scrolled_search(
+        index       => $index,
+        query       => $query,
+        search_type => 'scan',
+        scroll      => '5m',
+    );
+
+    while ( my $n = $scroller->next() ) {
+        last unless $size-- > 0;
+        print $n->{_id}, "\n";
     }
 }
 

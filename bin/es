@@ -42,6 +42,7 @@ $app->validate_params($cmd => \@params);
 ( $cmd eq 'delete'   ) and $app->command_delete( @params );
 ( $cmd eq 'put'      ) and $app->command_put( @params );
 ( $cmd eq 'search'   ) and $app->command_search( @params );
+( $cmd eq 'scan'     ) and $app->command_scan( @params );
 ( $cmd eq 'get'      ) and $app->command_get( @params );
 ( $cmd eq 'alias'    ) and $app->command_alias( @params );
 ( $cmd eq 'unalias'  ) and $app->command_unalias( @params );
@@ -77,6 +78,9 @@ es -- The command line client of ElasticSearch.
 
     # Search by a field
     es search <index> <type> <field>:<search string> [<size>]
+
+    # Scan (scrolled search an index)
+    es scan <index> <type> <search string> [<size>]
 
     # Aliasing
     es alias   <index> <alias>
@@ -163,6 +167,10 @@ Print the specic document as JSON.
 =head2 search <index> <type> <field>:<query_string>
 
 Perform a simple text query. Need to provide field name and a query string.
+
+=head2 scan <index> <type> <query_string>
+
+Perform a scan of an index for a text.
 
 =head1 AUTHORS
 
