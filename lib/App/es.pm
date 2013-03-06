@@ -36,8 +36,8 @@ my %commands = (
     'put-mapping'  => [ qw/ index_y json_file / ],
     'put-settings' => [ qw/ index_y json_file / ],
 
-    search     => [ qw/ index_y type searchstr size_opt / ],
-    scan       => [ qw/ index_y type string size_opt / ],
+    search     => [ qw/ index_y type searchstr / ],
+    scan       => [ qw/ index_y type string / ],
 
     alias      => [ qw/ index_y_notalias alias_n / ],
     unalias    => [ qw/ index_y_notalias alias_y / ],
@@ -72,10 +72,19 @@ option mapping => (
     isa => App::es::ParamValidation->get_validator("json_file")
 );
 
+option size => (
+    is => "ro",
+    format => "i",
+    documentation => "The size of search result.",
+    default => sub { 24 },
+    isa => App::es::ParamValidation->get_validator("size"),
+);
+
 sub _build_es {
     return ElasticSearch->new(
         servers     => $ENV{ELASTIC_SEARCH_SERVERS},
         trace_calls => $ENV{ELASTIC_SEARCH_TRACE},
+        transport   => $ENV{ELASTIC_SEARCH_TRANSPORT} || ($^V gt v5.14.0 ? "httptiny" : "http"),
     );
 }
 
@@ -251,6 +260,7 @@ sub command_reindex {
             index  => $index_src,
         ),
         dest_index => $index_dest,
+        bulk_size  => $self->size,
     );
 }
 
@@ -267,7 +277,7 @@ sub command_get {
 }
 
 sub command_search {
-    my ( $self, $index, $type, $string, $size ) = @_;
+    my ( $self, $index, $type, $string ) = @_;
 
     my ( $field, $text ) = split q{:} => $string;
     my $query = {
@@ -280,7 +290,7 @@ sub command_search {
     my $result = $self->es->search(
         index => $index,
         type  => $type,
-        size  => $size || 24,
+        size  => $self->size,
         query => $query,
         highlight => { fields => { $field => {} },
                        pre_tags  => [ '__STARTCOLOR__' ],

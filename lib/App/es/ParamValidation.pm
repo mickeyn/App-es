@@ -71,8 +71,7 @@ my %validation = (
         1;
     },
 
-    size_opt => sub {
-        return 1 unless $_[0]; # optional
+    size => sub {
         die "[ERROR] invalid size: $_[0]\n"
             unless $_[0] and $_[0] =~ /^[0-9]*$/;
     },
