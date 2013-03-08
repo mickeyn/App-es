@@ -16,6 +16,7 @@ my $cmd = shift or do {
     _usage();
 };
 _usage() if $cmd =~ /^(?:help|-h(elp)?|--h(elp)?)$/;
+$cmd =~ s/-/_/g;
 die "illegal command\n" unless App::es->is_command( $cmd );
 
 binmode STDOUT, ":utf8";
@@ -31,23 +32,23 @@ my @aliases = @{ $app->_get_elastic_search_aliases };
 
 $app->validate_params($cmd => \@params);
 
-( $cmd eq 'ls'       ) and $app->command_ls       ( @params );
-( $cmd eq 'ls-types' ) and $app->command_ls_types ( @params );
-( $cmd eq 'ls-aliases' ) and $app->command_ls_aliases ( @params );
-( $cmd eq 'get-mapping'  ) and $app->command_get_mapping ( @params );
-( $cmd eq 'get-settings' ) and $app->command_get_settings( @params );
-( $cmd eq 'put-mapping'  ) and $app->command_put_mapping ( @params );
-( $cmd eq 'put-settings' ) and $app->command_put_settings( @params );
-( $cmd eq 'reindex'  )   and $app->command_reindex( @params );
-( $cmd eq 'create'   ) and $app->command_create( @params );
-( $cmd eq 'delete'   ) and $app->command_delete( @params );
-( $cmd eq 'put'      ) and $app->command_put( @params );
-( $cmd eq 'search'   ) and $app->command_search( @params );
-( $cmd eq 'scan'     ) and $app->command_scan( @params );
-( $cmd eq 'get'      ) and $app->command_get( @params );
-( $cmd eq 'alias'    ) and $app->command_alias( @params );
-( $cmd eq 'unalias'  ) and $app->command_unalias( @params );
-( $cmd eq 'copy'     ) and $app->command_copy( @params );
+( $cmd eq 'ls'           ) and $app->command_ls           ( @params );
+( $cmd eq 'ls_types'     ) and $app->command_ls_types     ( @params );
+( $cmd eq 'ls_aliases'   ) and $app->command_ls_aliases   ( @params );
+( $cmd eq 'get_mapping'  ) and $app->command_get_mapping  ( @params );
+( $cmd eq 'get_settings' ) and $app->command_get_settings ( @params );
+( $cmd eq 'put_mapping'  ) and $app->command_put_mapping  ( @params );
+( $cmd eq 'put_settings' ) and $app->command_put_settings ( @params );
+( $cmd eq 'reindex'      ) and $app->command_reindex      ( @params );
+( $cmd eq 'create'       ) and $app->command_create       ( @params );
+( $cmd eq 'delete'       ) and $app->command_delete       ( @params );
+( $cmd eq 'put'          ) and $app->command_put          ( @params );
+( $cmd eq 'search'       ) and $app->command_search       ( @params );
+( $cmd eq 'scan'         ) and $app->command_scan         ( @params );
+( $cmd eq 'get'          ) and $app->command_get          ( @params );
+( $cmd eq 'alias'        ) and $app->command_alias        ( @params );
+( $cmd eq 'unalias'      ) and $app->command_unalias      ( @params );
+( $cmd eq 'copy'         ) and $app->command_copy         ( @params );
 
 exit 0;
 

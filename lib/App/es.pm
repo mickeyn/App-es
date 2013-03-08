@@ -3,12 +3,14 @@ use strict;
 use warnings;
 
 use App::es::ParamValidation;
+
 use JSON qw( decode_json to_json );
-use ElasticSearch;
 use File::Slurp qw(read_file);
 use Term::ANSIColor;
 use URI;
 use URI::Split qw(uri_split);
+
+use ElasticSearch;
 
 use Moo;
 use MooX::Options protect_argv => 0;
@@ -18,29 +20,29 @@ our $VERSION = "0.1";
 ####
 
 my %commands = (
-    ls           => [ qw/ subname_opt / ],
-    'ls-types'   => [ qw/ index_y / ],
-    'ls-aliases' => [ qw/ index_y / ],
+    ls           => [ qw/ subname_opt              / ],
+    ls_types     => [ qw/ index_y                  / ],
+    ls_aliases   => [ qw/ index_y                  / ],
 
-    create     => [ qw/ index_n / ],
-    delete     => [ qw/ index_y / ],
-    reindex    => [ qw/ index_y index_y / ],
-    copy       => [ qw/ index_fq index_fq / ],
+    create       => [ qw/ index_n                  / ],
+    delete       => [ qw/ index_y                  / ],
+    reindex      => [ qw/ index_y index_y          / ],
+    copy         => [ qw/ index_fq index_fq        / ],
 
-    get        => [ qw/ index_y type doc_id / ],
-    put        => [ qw/ index_y type json_file / ],
+    get          => [ qw/ index_y type doc_id      / ],
+    put          => [ qw/ index_y type json_file   / ],
 
-    'get-mapping'  => [ qw/ index_y / ],
-    'get-settings' => [ qw/ index_y / ],
+    get_mapping  => [ qw/ index_y                  / ],
+    get_settings => [ qw/ index_y                  / ],
 
-    'put-mapping'  => [ qw/ index_y json_file / ],
-    'put-settings' => [ qw/ index_y json_file / ],
+    put_mapping  => [ qw/ index_y json_file        / ],
+    put_settings => [ qw/ index_y json_file        / ],
 
-    search     => [ qw/ index_y type searchstr / ],
-    scan       => [ qw/ index_y type string / ],
+    search       => [ qw/ index_y type searchstr   / ],
+    scan         => [ qw/ index_y type string      / ],
 
-    alias      => [ qw/ index_y_notalias alias_n / ],
-    unalias    => [ qw/ index_y_notalias alias_y / ],
+    alias        => [ qw/ index_y_notalias alias_n / ],
+    unalias      => [ qw/ index_y_notalias alias_y / ],
 );
 
 #### attributes
@@ -52,32 +54,32 @@ has es => (
 has _aliases => ( is => "lazy" );
 
 option long => (
-    is => "ro",
-    short => "l",
-    default => sub { 0 },
+    is            => "ro",
+    short         => "l",
+    default       => sub { 0 },
     documentation => "Long format in the output."
 );
 
 option settings => (
-    is => "ro",
-    format => "s",
+    is            => "ro",
+    format        => "s",
     documentation => "The settings json file.",
-    isa => App::es::ParamValidation->get_validator("json_file")
+    isa           => App::es::ParamValidation->get_validator("json_file")
 );
 
 option mapping => (
-    is => "ro",
-    format => "s",
+    is            => "ro",
+    format        => "s",
     documentation => "The mapping json file.",
-    isa => App::es::ParamValidation->get_validator("json_file")
+    isa           => App::es::ParamValidation->get_validator("json_file")
 );
 
 option size => (
-    is => "ro",
-    format => "i",
+    is            => "ro",
+    format        => "i",
     documentation => "The size of search result.",
-    default => sub { 24 },
-    isa => App::es::ParamValidation->get_validator("size"),
+    default       => sub { 24 },
+    isa           => App::es::ParamValidation->get_validator("size"),
 );
 
 sub _build_es {
@@ -255,10 +257,10 @@ sub command_reindex {
     my $es = $self->es;
     $es->reindex(
         source => $es->scrolled_search(
-            query => { match_all => {} },
+            query       => { match_all => {} },
             search_type => "scan",
-            scroll => "10m",
-            index  => $index_src,
+            scroll      => "10m",
+            index       => $index_src,
         ),
         dest_index => $index_dest,
         bulk_size  => $self->size,
@@ -300,7 +302,7 @@ sub command_search {
     if ($field) {
         @highlight = (
             highlight => {
-                fields => { $field => {} },
+                fields    => { $field => {} },
                 pre_tags  => [ '__STARTCOLOR__' ],
                 post_tags => [ '__ENDCOLOR__' ],
             }
@@ -373,9 +375,9 @@ sub command_put {
     };
 
     $self->es->index(
-        index => $index,
-        type  => $type,
-        data  => $json,
+        index  => $index,
+        type   => $type,
+        data   => $json,
         create => 1
     );
 }
@@ -418,7 +420,7 @@ sub command_copy {
     my $settings = $source->{es}->index_settings( index => $source->{index} )->{$source->{index}}{settings};
     my $mappings = $source->{es}->mapping( index => $source->{index} )->{$source->{index}};
     $destination->{es}->create_index(
-        index => $destination->{index},
+        index    => $destination->{index},
         settings => $settings,
         mappings => $mappings
     );
@@ -426,10 +428,10 @@ sub command_copy {
     my $t0 = time;
     $destination->{es}->reindex(
         source => $source->{es}->scrolled_search(
-            query => { match_all => {} },
+            query       => { match_all => {} },
             search_type => "scan",
-            scroll => "10m",
-            index => $source->{index}
+            scroll      => "10m",
+            index       => $source->{index}
         ),
         dest_index => $destination->{index}
     );
@@ -455,10 +457,10 @@ sub _es_from_url {
     }
 
     my $es = ElasticSearch->new(
-        servers => $hostport,
-        timeout => 0,
+        servers      => $hostport,
+        timeout      => 0,
         max_requests => 0,
-        no_refresh => 1
+        no_refresh   => 1
     );
 
     return {
