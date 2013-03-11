@@ -145,7 +145,7 @@ sub command_ls {
         };
 
 
-    INDEX: for my $i ( keys %{ $stats->{_all}{indices} } ) {
+    INDEX: for my $i ( sort keys %{ $stats->{_all}{indices} } ) {
           next INDEX if $str and $i !~ /$str/;
 
           my $size  = $stats->{_all}{indices}{$i}{primaries}{store}{size};
@@ -155,7 +155,7 @@ sub command_ls {
       }
     }
     else {
-      INDEX: for ( @indices ) {
+      INDEX: for ( sort @indices ) {
             next INDEX if $str and !/$str/;
             print "$_\n";
         }
@@ -175,10 +175,10 @@ sub command_ls_types {
         @indices = @{ $x->{$index} };
     }
 
-    for my $n (@indices) {
+    for my $n ( sort @indices ) {
         my $mapping = $es->mapping( index => $n );
 
-    TYPE: for my $type ( keys %{ $mapping->{$n} } ) {
+    TYPE: for my $type ( sort keys %{ $mapping->{$n} } ) {
             if ($self->long) {
                 my $search = $es->count(
                     index => $n,
@@ -200,7 +200,7 @@ sub command_ls_aliases {
     my $aliases = $self->_get_elastic_search_index_alias_mapping;
     return unless ref($aliases) eq 'HASH' and exists $aliases->{$index};
 
-    print "$_\n" for @{ $aliases->{$index} };
+    print "$_\n" for sort @{ $aliases->{$index} };
 }
 
 sub command_get_mapping {
