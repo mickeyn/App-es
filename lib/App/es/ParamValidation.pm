@@ -6,30 +6,30 @@ use URI::Split  qw{ uri_split };
 
 our $VERSION = "0.1";
 
+my $regex_name = qr/^[a-zA-Z0-9_.-]*$/;
+
 my %validation = (
 
     subname_opt => sub {
         return 1 unless $_[0]; # optional
         die "[ERROR] invalid index name sub-string: $_[0]\n"
-            unless $_[0] =~ /^[a-zA-Z0-9_-]*$/;
-        1;
+            unless $_[0] =~ /$regex_name/;
     },
 
     type => sub {
         die "[ERROR] invalid type name: $_[0]\n"
-            unless $_[0] and $_[0] =~ /^[a-zA-Z0-9_-]+$/;
-        1;
+            unless $_[0] and $_[0] =~ /$regex_name/;
     },
 
     doc_id => sub {
         die "[ERROR] invalid document id: $_[0]\n"
-            unless $_[0] and $_[0] =~ /^[a-zA-Z0-9\/_-]+$/;
+            unless $_[0] and $_[0] =~ /$regex_name/;
         1;
     },
 
     index_y => sub {
         die "[ERROR] invalid index/alias name: $_[0]\n"
-            unless $_[0] and $_[0] =~ /^[a-zA-Z0-9_-]+$/;
+            unless $_[0] and $_[0] =~ /^[a-zA-Z0-9_.-]+$/;
         my $check = $_[1]->es->index_exists(index=>$_[0]);
         die "[ERROR] index/alias does not exists: $_[0]\n"
             unless $check and ref($check) eq 'HASH' and $check->{ok};
@@ -38,7 +38,7 @@ my %validation = (
 
     index_n => sub {
         die "[ERROR] invalid index/alias name: $_[0]\n"
-            unless $_[0] and $_[0] =~ /^[a-zA-Z0-9_-]+$/;
+            unless $_[0] and $_[0] =~ /$regex_name/;
         my $check = $_[1]->es->index_exists(index=>$_[0]);
         die "[ERROR] index/alias already exists: $_[0]\n"
             if $check and ref($check) eq 'HASH' and $check->{ok};
@@ -58,7 +58,7 @@ my %validation = (
             unless $_[0];
         utf8::decode($_[0]);
         die "[ERROR] invalid searchstr: $_[0]\n"
-            unless $_[0] =~ /^([a-zA-Z0-9_-]+ :)? [\w\d_\s-]+$/x;
+            unless $_[0] =~ /^([a-zA-Z0-9_.-]+ :)? [\w\d_\s-]+$/x;
         1;
     },
 
@@ -86,7 +86,7 @@ my %validation = (
 
     alias_n => sub {
         die "[ERROR] invalid index/alias name: $_[0]\n"
-        unless $_[0] and $_[0] =~ /^[a-zA-Z0-9_-]+$/;
+        unless $_[0] and $_[0] =~ /$regex_name/;
     }
 );
 
