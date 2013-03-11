@@ -19,6 +19,11 @@ _usage() if $cmd =~ /^(?:help|-h(elp)?|--h(elp)?)$/;
 $cmd =~ s/-/_/g;
 die "illegal command\n" unless App::es->is_command( $cmd );
 
+if ( $cmd eq 'get_bash_completions' ) {
+    print "\n" . App::es->get_bash_completions() . "\n";
+    exit 0;
+}
+
 binmode STDOUT, ":utf8";
 
 my $app = App::es->new_with_options;
@@ -173,6 +178,10 @@ Perform a simple text query. Need to provide field name and a query string.
 =head2 scan <index> <type> <query_string>
 
 Perform a scan of an index for a text.
+
+=head2 get-bash-completions
+
+get a bash completions function for the available commands above
 
 =head1 AUTHORS
 

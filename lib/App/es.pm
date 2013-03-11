@@ -43,6 +43,8 @@ my %commands = (
 
     alias        => [ qw/ index_y_notalias alias_n / ],
     unalias      => [ qw/ index_y_notalias alias_y / ],
+
+    get_bash_completions => [],
 );
 
 #### attributes
@@ -510,6 +512,18 @@ sub _get_elastic_search_index_alias_mapping {
         }
     }
     return \%mapping;
+}
+
+sub get_bash_completions {
+    my $commands = join q{ } => map { s/_/-/g ; $_ } keys %commands;
+    return << "BASH_COMPLETION";
+_app_es()
+    {
+        local cur=\${COMP_WORDS[COMP_CWORD]}
+        COMPREPLY=( \$(compgen -W "help $commands" -- \$cur) )
+}
+complete -F _app_es es
+BASH_COMPLETION
 }
 
 1;
