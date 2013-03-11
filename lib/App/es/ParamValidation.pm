@@ -58,7 +58,7 @@ my %validation = (
             unless $_[0];
         utf8::decode($_[0]);
         die "[ERROR] invalid searchstr: $_[0]\n"
-            unless $_[0] =~ /^([a-zA-Z0-9_.-]+ :)? [\w\d_\s-]+$/x;
+            unless $_[0] =~ /^([a-zA-Z0-9_.-]+ :)? [\w\d\s._-]+$/x;
         1;
     },
 
