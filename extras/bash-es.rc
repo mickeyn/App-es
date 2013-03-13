@@ -1,0 +1,80 @@
+#
+# bash-es.rc - bash completions for es app.
+#
+# this tool is dependant on es app (bin/es) - make sure it's in your path
+# and that your environment is set for it to work properly.
+#
+# disclaimer: this file is under construction.
+#
+
+cmds=$(es commands)
+
+__es_indices()
+{
+    for i in `es ls`; do
+        printf "$i "
+    done
+}
+
+__es_aliases()
+{
+    for i in `es ls-aliases`; do
+        printf "$i "
+    done
+}
+
+__es_types()
+{
+    for i in `es ls-types "$1"`; do
+        printf "$i "
+    done
+}
+
+_es()
+{
+    local base cur 
+
+    COMPREPLY=()
+
+    base="${COMP_WORDS[1]}"
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    case "${COMP_CWORD}" in
+        1)
+            COMPREPLY=( $(compgen -W "${cmds}" -- ${cur}) )
+            return 0
+            ;;
+
+        2)
+            if [[ ($base == 'alias') || ($base == 'unalias') ]]; then
+               COMPREPLY=( $(compgen -W "$(__es_indices)" -- ${cur}) )                              
+
+            elif [[ $base != 'ls' ]]; then
+               COMPREPLY=( $(compgen -W "$(__es_indices) $(__es_aliases)" -- ${cur}) )
+            fi
+
+            return 0
+            ;;
+
+        3)
+            if [[ ($base == 'get') || ($base == 'search') || ($base == 'scan') ]]; then
+               COMPREPLY=( $(compgen -W "$(__es_types "${COMP_WORDS[2]}")" -- ${cur}) )
+
+            elif [[ $base == 'unalias' ]]; then
+               COMPREPLY=( $(compgen -W "$(__es_aliases)" -- ${cur}) )                              
+
+            elif [[ $base == 'reindex' ]]; then
+               COMPREPLY=( $(compgen -W "$(__es_indices)" -- ${cur}) )                              
+            fi
+
+            return 0
+            ;;
+
+        *)
+        ;;
+   esac
+
+   return 0
+}
+
+complete -o default -o nospace -F _es es
