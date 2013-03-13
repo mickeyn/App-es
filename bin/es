@@ -70,7 +70,7 @@ es -- The command line client of ElasticSearch.
     # List document count / size per index / type
     es ls [<index_name_substring>]
     es ls-types <index>
-    es ls-aliases <index> # list aliases of an index
+    es ls-aliases [<index>] # list aliases of a given index or all (default)
 
     # Create / delete an index
     es create <index>

@@ -109,6 +109,11 @@ $validation{index_y_notalias} = sub {
     1;
 };
 
+$validation{index_y_opt} = sub {
+    return 1 unless $_[0]; # optional
+    return $validation{index_y}->(@_);
+};
+
 $validation{alias_y} = $validation{index_y};
 
 sub get_validator {

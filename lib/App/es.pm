@@ -25,7 +25,7 @@ our $VERSION = "0.1";
 my %commands = (
     ls           => [ qw/ subname_opt              / ],
     ls_types     => [ qw/ index_y                  / ],
-    ls_aliases   => [ qw/ index_y                  / ],
+    ls_aliases   => [ qw/ index_y_opt              / ],
 
     create       => [ qw/ index_n                  / ],
     delete       => [ qw/ index_y                  / ],
@@ -218,9 +218,14 @@ sub command_ls_aliases {
     my ( $self, $index ) = @_;
 
     my $aliases = $self->_get_elastic_search_index_alias_mapping;
-    return unless ref($aliases) eq 'HASH' and exists $aliases->{$index};
 
-    print "$_\n" for sort @{ $aliases->{$index} };
+    if ( $index ) {
+        return unless ref($aliases) eq 'HASH' and exists $aliases->{$index};
+        print "$_\n" for sort @{ $aliases->{$index} };
+    } else {
+        my %names = map { $_ => undef } map { $_, @{ $aliases->{$_} } } keys %$aliases;
+        print "$_\n" for sort keys %names;
+    }
 }
 
 sub command_get_mapping {
