@@ -3,12 +3,15 @@ use strict;
 use warnings;
 
 use App::es::ParamValidation qw(ESExistingIndex ESName);
+use App::es::ParamValidation;
+
 use JSON qw( decode_json to_json );
-use ElasticSearch;
 use File::Slurp qw(read_file);
 use Term::ANSIColor;
 use URI;
 use URI::Split qw(uri_split);
+
+use ElasticSearch;
 
 use Moo;
 use MooX::Options protect_argv => 0;
@@ -20,29 +23,31 @@ our $VERSION = "0.1";
 ####
 
 my %commands = (
-    ls           => [ qw/ subname_opt / ],
-    'ls-types'   => [ qw/ index_y / ],
-    'ls-aliases' => [ qw/ index_y / ],
+    ls           => [ qw/ subname_opt              / ],
+    ls_types     => [ qw/ index_y                  / ],
+    ls_aliases   => [ qw/ index_y                  / ],
 
-    create     => [ qw/ index_n / ],
-    delete     => [ qw/ index_y / ],
-    reindex    => [ qw/ index_y index_y / ],
-    copy       => [ qw/ index_fq index_fq / ],
+    create       => [ qw/ index_n                  / ],
+    delete       => [ qw/ index_y                  / ],
+    reindex      => [ qw/ index_y index_y          / ],
+    copy         => [ qw/ index_fq index_fq        / ],
 
-    get        => [ qw/ index_y type doc_id / ],
-    put        => [ qw/ index_y type json_file / ],
+    get          => [ qw/ index_y type doc_id      / ],
+    put          => [ qw/ index_y type json_file   / ],
 
-    'get-mapping'  => [ qw/ index_y / ],
-    'get-settings' => [ qw/ index_y / ],
+    get_mapping  => [ qw/ index_y                  / ],
+    get_settings => [ qw/ index_y                  / ],
 
-    'put-mapping'  => [ qw/ index_y json_file / ],
-    'put-settings' => [ qw/ index_y json_file / ],
+    put_mapping  => [ qw/ index_y json_file        / ],
+    put_settings => [ qw/ index_y json_file        / ],
 
-    search     => [ qw/ searchstr / ],
-    scan       => [ qw/ index_y type string / ],
+    search       => [ qw/ searchstr / ],
+    scan         => [ qw/ index_y type string      / ],
 
-    alias      => [ qw/ index_y_notalias alias_n / ],
-    unalias    => [ qw/ index_y_notalias alias_y / ],
+    alias        => [ qw/ index_y_notalias alias_n / ],
+    unalias      => [ qw/ index_y_notalias alias_y / ],
+
+    get_bash_completions => [],
 );
 
 #### attributes
@@ -54,32 +59,32 @@ has es => (
 has _aliases => ( is => "lazy" );
 
 option long => (
-    is => "ro",
-    short => "l",
-    default => sub { 0 },
+    is            => "ro",
+    short         => "l",
+    default       => sub { 0 },
     documentation => "Long format in the output."
 );
 
 option settings => (
-    is => "ro",
-    format => "s",
+    is            => "ro",
+    format        => "s",
     documentation => "The settings json file.",
-    isa => App::es::ParamValidation->get_validator("json_file")
+    isa           => App::es::ParamValidation->get_validator("json_file")
 );
 
 option mapping => (
-    is => "ro",
-    format => "s",
+    is            => "ro",
+    format        => "s",
     documentation => "The mapping json file.",
-    isa => App::es::ParamValidation->get_validator("json_file")
+    isa           => App::es::ParamValidation->get_validator("json_file")
 );
 
 option size => (
-    is => "ro",
-    format => "i",
+    is            => "ro",
+    format        => "i",
     documentation => "The size of search result.",
-    default => sub { 24 },
-    isa => App::es::ParamValidation->get_validator("size"),
+    default       => sub { 24 },
+    isa           => App::es::ParamValidation->get_validator("size"),
 );
 
 option index => (
@@ -160,7 +165,7 @@ sub command_ls {
         };
 
 
-    INDEX: for my $i ( keys %{ $stats->{_all}{indices} } ) {
+    INDEX: for my $i ( sort keys %{ $stats->{_all}{indices} } ) {
           next INDEX if $str and $i !~ /$str/;
 
           my $size  = $stats->{_all}{indices}{$i}{primaries}{store}{size};
@@ -170,7 +175,7 @@ sub command_ls {
       }
     }
     else {
-      INDEX: for ( @indices ) {
+      INDEX: for ( sort @indices ) {
             next INDEX if $str and !/$str/;
             print "$_\n";
         }
@@ -190,10 +195,10 @@ sub command_ls_types {
         @indices = @{ $x->{$index} };
     }
 
-    for my $n (@indices) {
+    for my $n ( sort @indices ) {
         my $mapping = $es->mapping( index => $n );
 
-    TYPE: for my $type ( keys %{ $mapping->{$n} } ) {
+    TYPE: for my $type ( sort keys %{ $mapping->{$n} } ) {
             if ($self->long) {
                 my $search = $es->count(
                     index => $n,
@@ -215,7 +220,7 @@ sub command_ls_aliases {
     my $aliases = $self->_get_elastic_search_index_alias_mapping;
     return unless ref($aliases) eq 'HASH' and exists $aliases->{$index};
 
-    print "$_\n" for @{ $aliases->{$index} };
+    print "$_\n" for sort @{ $aliases->{$index} };
 }
 
 sub command_get_mapping {
@@ -272,10 +277,10 @@ sub command_reindex {
     my $es = $self->es;
     $es->reindex(
         source => $es->scrolled_search(
-            query => { match_all => {} },
+            query       => { match_all => {} },
             search_type => "scan",
-            scroll => "10m",
-            index  => $index_src,
+            scroll      => "10m",
+            index       => $index_src,
         ),
         dest_index => $index_dest,
         bulk_size  => $self->size,
@@ -378,9 +383,9 @@ sub command_put {
     };
 
     $self->es->index(
-        index => $index,
-        type  => $type,
-        data  => $json,
+        index  => $index,
+        type   => $type,
+        data   => $json,
         create => 1
     );
 }
@@ -423,7 +428,7 @@ sub command_copy {
     my $settings = $source->{es}->index_settings( index => $source->{index} )->{$source->{index}}{settings};
     my $mappings = $source->{es}->mapping( index => $source->{index} )->{$source->{index}};
     $destination->{es}->create_index(
-        index => $destination->{index},
+        index    => $destination->{index},
         settings => $settings,
         mappings => $mappings
     );
@@ -431,10 +436,10 @@ sub command_copy {
     my $t0 = time;
     $destination->{es}->reindex(
         source => $source->{es}->scrolled_search(
-            query => { match_all => {} },
+            query       => { match_all => {} },
             search_type => "scan",
-            scroll => "10m",
-            index => $source->{index}
+            scroll      => "10m",
+            index       => $source->{index}
         ),
         dest_index => $destination->{index}
     );
@@ -460,10 +465,10 @@ sub _es_from_url {
     }
 
     my $es = ElasticSearch->new(
-        servers => $hostport,
-        timeout => 0,
+        servers      => $hostport,
+        timeout      => 0,
         max_requests => 0,
-        no_refresh => 1
+        no_refresh   => 1
     );
 
     return {
@@ -513,6 +518,18 @@ sub _get_elastic_search_index_alias_mapping {
         }
     }
     return \%mapping;
+}
+
+sub get_bash_completions {
+    my $commands = join q{ } => map { s/_/-/g ; $_ } keys %commands;
+    return << "BASH_COMPLETION";
+_app_es()
+    {
+        local cur=\${COMP_WORDS[COMP_CWORD]}
+        COMPREPLY=( \$(compgen -W "help $commands" -- \$cur) )
+}
+complete -F _app_es es
+BASH_COMPLETION
 }
 
 1;
