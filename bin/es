@@ -38,6 +38,7 @@ my @aliases = @{ $app->_get_elastic_search_aliases };
 
 $app->validate_params($cmd => \@params);
 
+( $cmd eq 'commands'     ) and $app->command_commands     ( @params );
 ( $cmd eq 'ls'           ) and $app->command_ls           ( @params );
 ( $cmd eq 'ls_types'     ) and $app->command_ls_types     ( @params );
 ( $cmd eq 'ls_aliases'   ) and $app->command_ls_aliases   ( @params );
@@ -66,6 +67,9 @@ __END__
 es -- The command line client of ElasticSearch.
 
 =head1 SYNOPSIS
+
+    es help     # this message
+    es commands # list available commands
 
     # List document count / size per index / type
     es ls [<index_name_substring>]

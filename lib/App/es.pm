@@ -23,6 +23,9 @@ our $VERSION = "0.1";
 ####
 
 my %commands = (
+    help         => [],
+    commands     => [],
+
     ls           => [ qw/ subname_opt              / ],
     ls_types     => [ qw/ index_y                  / ],
     ls_aliases   => [ qw/ index_y_opt              / ],
@@ -138,6 +141,10 @@ sub validate_params {
 
     die "[ERROR] too many arguments for command: $cmd\n"
         if @params;
+}
+
+sub command_commands {
+    print "$_\n" for ( sort map {s/_/-/; $_} keys %commands );
 }
 
 sub command_ls {
