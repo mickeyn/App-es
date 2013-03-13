@@ -3,6 +3,9 @@ package App::es::ParamValidation;
 use File::Slurp qw{ read_file };
 use JSON        qw{ decode_json };
 use URI::Split  qw{ uri_split };
+use MooX::Types::MooseLike;
+use base qw(Exporter);
+our @EXPORT_OK = ();
 
 our $VERSION = "0.1";
 
@@ -51,6 +54,13 @@ my %validation = (
         die "[ERROR] not a valid json file: $_[0]\n"
             unless decode_json(read_file($_[0]));
         1;
+    },
+
+    field => sub {
+        die "[ERROR] missing field name"
+        unless $_[0];
+        die "[ERROR] invalid field name: $_[0]\n"
+        unless $_[0] =~ /^ [a-zA-Z0-9_-]+ $/x;
     },
 
     searchstr => sub {
@@ -105,6 +115,20 @@ sub get_validator {
     my ( $class, $arg_type ) = @_;
     return ($validation{ $arg_type } || sub { undef });
 }
+
+MooX::Types::MooseLike::register_types([
+    +{
+        name => "ESExistingIndex",
+        test => App::es::ParamValidation->get_validator("index_y"),
+    },
+    +{
+        name => "ESName",
+        test => sub {
+            $_[0] =~ /^ [a-zA-Z0-9_-]+ $/x;
+        },
+        message => sub { "$_[0] does not look like a valid name" }
+    },
+], __PACKAGE__);
 
 1;
 __END__

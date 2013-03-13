@@ -2,7 +2,7 @@ package App::es;
 use strict;
 use warnings;
 
-use App::es::ParamValidation;
+use App::es::ParamValidation qw(ESExistingIndex ESName);
 use JSON qw( decode_json to_json );
 use ElasticSearch;
 use File::Slurp qw(read_file);
@@ -12,9 +12,11 @@ use URI::Split qw(uri_split);
 
 use Moo;
 use MooX::Options protect_argv => 0;
+use MooX::Types::MooseLike::Base qw(:all);
 
 our $VERSION = "0.1";
 
+####
 ####
 
 my %commands = (
@@ -36,7 +38,7 @@ my %commands = (
     'put-mapping'  => [ qw/ index_y json_file / ],
     'put-settings' => [ qw/ index_y json_file / ],
 
-    search     => [ qw/ index_y type searchstr / ],
+    search     => [ qw/ searchstr / ],
     scan       => [ qw/ index_y type string / ],
 
     alias      => [ qw/ index_y_notalias alias_n / ],
@@ -78,6 +80,21 @@ option size => (
     documentation => "The size of search result.",
     default => sub { 24 },
     isa => App::es::ParamValidation->get_validator("size"),
+);
+
+option index => (
+    is => "ro",
+    format => "s@",
+    documentation => "The index/indices for doing searches.",
+    isa => ArrayRef[ESName],
+);
+
+option type => (
+    is => "ro",
+    format => "s@",
+    documentation => "The document types for doing searches.",
+    isa => App::es::ParamValidation->get_validator("type"),
+    isa => ArrayRef[ESName]
 );
 
 sub _build_es {
@@ -278,38 +295,26 @@ sub command_get {
 }
 
 sub command_search {
-    my ( $self, $index, $type, $string ) = @_;
-
-    my ( $field, $text );
-    if ($string =~ /:/) {
-        ( $field, $text ) = split q{:} => $string;
-    }
-    else {
-        $text = $string;
-    }
-    $field ||= "_all";
+    my ( $self, $string ) = @_;
 
     my $query = {
         query_string => {
-            query => $text,
-            default_field => $field,
+            query => $string,
+            default_field => "_all"
         }
     };
 
-    my @highlight = ();
-    if ($field) {
-        @highlight = (
-            highlight => {
-                fields => { $field => {} },
-                pre_tags  => [ '__STARTCOLOR__' ],
-                post_tags => [ '__ENDCOLOR__' ],
-            }
-        );
-    }
+    my @highlight = (
+        highlight => {
+            fields => { _all => {} },
+            pre_tags  => [ '__STARTCOLOR__' ],
+            post_tags => [ '__ENDCOLOR__' ],
+        }
+    );
 
     my $result = $self->es->search(
-        index => $index,
-        type  => $type,
+        ($self->index ? (index => $self->index) : () ),
+        ($self->type  ? (type  => $self->type)  : () ),
         size  => $self->size,
         query => $query,
         @highlight,

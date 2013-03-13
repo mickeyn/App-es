@@ -19,6 +19,7 @@ _usage() if $cmd =~ /^(?:help|-h(elp)?|--h(elp)?)$/;
 die "illegal command\n" unless App::es->is_command( $cmd );
 
 binmode STDOUT, ":utf8";
+binmode STDERR, ":utf8";
 
 my $app = App::es->new_with_options;
 
