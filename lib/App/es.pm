@@ -224,14 +224,12 @@ sub command_ls_types {
 sub command_ls_aliases {
     my ( $self, $index ) = @_;
 
-    my $aliases = $self->_get_elastic_search_index_alias_mapping;
-
     if ( $index ) {
+        my $aliases = $self->_get_elastic_search_index_alias_mapping;
         return unless ref($aliases) eq 'HASH' and exists $aliases->{$index};
         print "$_\n" for sort @{ $aliases->{$index} };
     } else {
-        my %names = map { $_ => undef } map { $_, @{ $aliases->{$_} } } keys %$aliases;
-        print "$_\n" for sort keys %names;
+        print "$_\n" for sort @{ $self->_get_elastic_search_aliases };
     }
 }
 
