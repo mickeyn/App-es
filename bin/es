@@ -51,6 +51,7 @@ $app->validate_params($cmd => \@params);
 ( $cmd eq 'alias'        ) and $app->command_alias        ( @params );
 ( $cmd eq 'unalias'      ) and $app->command_unalias      ( @params );
 ( $cmd eq 'copy'         ) and $app->command_copy         ( @params );
+( $cmd eq 'count'        ) and $app->command_count        ( @params );
 
 exit 0;
 

@@ -46,6 +46,7 @@ my %commands = (
 
     search       => [ qw/ searchstr / ],
     scan         => [ qw/ index_y type string      / ],
+    count        => [ ],
 
     alias        => [ qw/ index_y_notalias alias_n / ],
     unalias      => [ qw/ index_y_notalias alias_y / ],
@@ -454,6 +455,19 @@ sub command_copy {
 
     my $t0_elapsed = time - $t0;
     print "Done. took $t0_elapsed seconds\n";
+}
+
+sub command_count {
+    my ($self) = @_;
+    my $result = $self->es->count(
+        $self->index ? ( index => $self->index ) : (),
+        $self->type  ? ( type  => $self->type  ) : (),
+        query => { match_all => {} }
+    );
+
+    if ($result->{count}) {
+        print $result->{count} . "\n";
+    }
 }
 
 #### Non-command handlers
