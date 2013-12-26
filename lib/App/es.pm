@@ -90,18 +90,18 @@ option size => (
 );
 
 option index => (
-    is => "ro",
-    format => "s@",
+    is            => "ro",
+    format        => "s@",
     documentation => "The index/indices for doing searches.",
-    isa => ArrayRef[ESName],
+    isa           => ArrayRef[ESName],
 );
 
 option type => (
-    is => "ro",
-    format => "s@",
+    is            => "ro",
+    format        => "s@",
     documentation => "The document types for doing searches.",
-    isa => App::es::ParamValidation->get_validator("type"),
-    isa => ArrayRef[ESName]
+    isa           => App::es::ParamValidation->get_validator("type"),
+    isa           => ArrayRef[ESName]
 );
 
 sub _build_es {
